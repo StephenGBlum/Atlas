@@ -5,7 +5,7 @@ import requests
 import pandas as pd
 import numpy as np
 
-degree = input('Enter the degree you would like to explore: ')
+degree = input('Enter a keyword of a program you would like to explore: ')
  #use business for testing
 program_index = 'https://bulletin.miami.edu/program-index/'
 def get_program_links(program_index):
@@ -63,12 +63,110 @@ def get_program_type(prgram_index):
         types.append(column)
     return (types)
 
+def get_program_level(program_index):
+    data = requests.get(program_index)
+    html = BeautifulSoup(data.text, 'html.parser')
 
+    tables = html.find_all('table')
+    table = html.find('table', class_='sorttable')
+
+    # columns = row.find_all('td')
+
+    rows = []
+    columns = []
+    levels = []
+    for row in table.find_all('tr'):
+        column = row.find_all('td')[3].text
+        levels.append(column)
+    return (levels)
 #print(len(get_program_names(program_index)))
 #print(len(get_program_links(program_index)))
 #print(len(get_program_type(program_index)))
-all_courses = np.stack((get_program_names(program_index),get_program_type(program_index),get_program_links(program_index)),axis=1)
-print(all_courses[0])
+all_courses = np.stack((get_program_names(program_index),get_program_type(program_index),get_program_level(program_index),get_program_links(program_index)),axis=1)
+#Name is index 0, Undergrad/grad is index 1, major/minor is index 2, link is index 3
+def search_list(degree, all_courses):
+    search_results =[]
+    search_count =0
+    for i in range (len(all_courses)):
+        if degree in all_courses[i][0]:
+            search_results.append(all_courses[i])
+            search_count += 1
+
+
+    return search_results
+
+
+def filter_search(search_list, search_term):
+
+
+    filtered_results = []
+
+    search_count = 0
+    if search_term == 'Undergraduate':
+        for i in range(len(search_list)):
+            if 'Undergraduate' in search_list[i][1]:
+                filtered_results.append(search_list[i])
+                search_count += 1
+
+        return filtered_results
+
+    elif search_term == 'Graduate':
+        for i in range(len(search_list)):
+            if 'Graduate' in search_list[i][1]:
+                filtered_results.append(search_list[i])
+                search_count += 1
+
+        return filtered_results
+
+    elif search_term == 'Major':
+        for i in range(len(search_list)):
+            if 'Major' in search_list[i][2]:
+                filtered_results.append(search_list[i])
+                search_count += 1
+
+        return filtered_results
+
+    elif search_term == 'Minor':
+        for i in range(len(search_list)):
+            if 'Minor' in search_list[i][2]:
+                filtered_results.append(search_list[i])
+                search_count += 1
+
+        return filtered_results
+
+    elif search_term == 'Certificate':
+        for i in range (len(search_list)):
+            if 'Certificate' in search_list[i][2]:
+                filtered_results.append(search_list[i])
+                search_count += 1
+
+        return filtered_results
+
+
+
+
+print(search_list(degree,all_courses))
+print(len(search_list(degree,all_courses)),' Courses Found')
+search_term = ''
+filter_bool = input('Would you like to filter these search results?\n')
+
+if filter_bool == 'Yes':
+    filter_options = int(input('Filter search result: '
+                               '\n1. By program level (graduate/undergraduate)'
+                               '\n2. By program type (Major/Minor/Certificate)\n'))
+
+    if filter_options == 1:
+        search_term = input('Would you like to search for Undergraduate or Graduate programs?\n')
+    elif filter_options == 2:
+        search_term = input('Would you like to search for a Major, Minor, or Certificate?\n')
+
+    print(filter_search(search_list(degree,all_courses),search_term))
+    print(len(filter_search(search_list(degree, all_courses),search_term)),' Courses Found')
+else:
+    print('')
+
+
+
 def majors_bus_students(degree):
     school_link = 'https://bulletin.miami.edu/undergraduate-academic-programs/' + str(degree) + '/#majorsminorstext'
     data = requests.get(school_link)
@@ -203,27 +301,6 @@ def architecture(degree):
     #print(majors_for_arc_students)
     return links
 
-#print(architecture(degree))
-if degree.lower() == 'business':
-        bus_choice = int(input('Would you like to see: \n1. Majors for business students '
-                       '\n2. Co-Majors for business students \n3. Minors for business students'
-                        '\n4. Minors for Non-Business students\n'))
-        if bus_choice == 1:
-            print(majors_bus_students(degree))
-        elif bus_choice == 2:
-            print(co_majors_bus_students(degree))
-        elif bus_choice == 3:
-            print(minors_bus_students(degree))
-        elif bus_choice == 4:
-            print(minors_non_bus_students(degree))
-        else:
-            print('Please choose one of the above.')
-
-# Get Majors in degree
-
-
-
-
  #Works
 
 carriculum_link = "https://bulletin.miami.edu" #add link from array + #curriculumtext
@@ -235,7 +312,7 @@ def carriculum_parser(carriculum_link, degree_link, plan_of_study_ext = "#planof
     # Find data (table containing required text)
     tables = html.find_all('table')
     table = html.find('table', class_='sc_plangrid')
-    print(table)
+    #print(table)
     rows=[]
 
     for row in table.find_all('tr'):
@@ -252,21 +329,21 @@ def carriculum_parser(carriculum_link, degree_link, plan_of_study_ext = "#planof
         rows.append(lines[0])
     new_list=[]
     positions =[]
-    print(rows)
+    #print(rows)
     for i in range(0,len(rows)):
         if 'Hours' in rows[i]:
             positions.append(i)
 
     new_list=[]
     temp =[]
-    print(positions)
+    #print(positions)
     for i in range(len(positions)-1):
         temp = rows[positions[i]:positions[i+1]]
-        print(temp)
+        #print(temp)
         new_list.append(temp)
         #temp.clear()
 
-    print(new_list)
+    return new_list
 
 
 
@@ -277,8 +354,8 @@ def carriculum_parser(carriculum_link, degree_link, plan_of_study_ext = "#planof
 
         #print(even)
 
-
-carriculum_parser(carriculum_link, all_courses[0][2], '#planofstudytext')
+select_program = int(input('Enter the index of the selected program'))
+print(carriculum_parser(carriculum_link, filter_search(search_list(degree,all_courses),search_term)[select_program][3], '#planofstudytext'))
 #print('Number of Majors in Degree: ',len(architecture(degree)))
 
 #architecture(degree)
